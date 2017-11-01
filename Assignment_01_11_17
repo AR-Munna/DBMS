@@ -1,0 +1,179 @@
+DROP TABLE Student CASCADE CONSTRAINTS;
+DROP TABLE Course CASCADE CONSTRAINTS;
+DROP TABLE Enrolled CASCADE CONSTRAINTS;
+
+
+CREATE TABLE Student(
+    ssn CHAR(9) CONSTRAINT student_ssn_pk PRIMARY KEY, 
+    Last VARCHAR2(20) CONSTRAINT student_Last_NN NOT NULL,
+    First	VARCHAR2(20),
+    DOB DATE,
+    gender CHAR CHECK (gender in('M','F')),
+    gpa NUMBER(3,2)
+);
+
+
+
+INSERT INTO Student
+(ssn,Last,First,DOB,gender,gpa) VALUES ('437890245', 'Richard', 'Boyd', TO_DATE('10-20-1981', 'MM-DD-YYYY'),'M',3.40);
+
+INSERT INTO Student
+(ssn,Last,First,DOB,gender,gpa) VALUES ('437890246', 'Stewart', 'Brooks', TO_DATE('08-14-1982', 'MM-DD-YYYY'),'M',2.92);
+
+INSERT INTO Student
+(ssn,Last,First,DOB,gender,gpa) VALUES ('437890247', 'Nguyen', 'Julie', TO_DATE('04-18-1984', 'MM-DD-YYYY'),'F',2.92);
+
+INSERT INTO Student
+(ssn,Last,First,DOB,gender,gpa) VALUES ('437890248', 'Shane', 'Duan', TO_DATE('04-18-1984','MM-DD-YYYY'),'M',3.85);
+
+INSERT INTO Student
+(ssn,Last,DOB,gender,gpa) VALUES ('437890249', 'Nguyen',TO_DATE('12-08-1982', 'MM-DD-YYYY'),'F',4.00);
+
+
+
+CREATE TABLE Course(
+    SecNo CHAR(5) PRIMARY KEY,
+    CourseID VARCHAR2(10),
+    Title VARCHAR2(40) UNIQUE
+);
+
+
+INSERT INTO Course
+(SecNo,CourseID,Title) VALUES ('12376','COSC3480','DBMS');
+
+INSERT INTO Course
+(SecNo,CourseID,Title) VALUES ('34566','COSC4318','DOC');
+
+INSERT INTO Course
+(SecNo,CourseID,Title) VALUES ('04325','COSC4330','OS');
+
+INSERT INTO Course
+(SecNo,CourseID,Title) VALUES ('67346','COSC4377','COMPNET');
+
+
+
+CREATE TABLE Enrolled(
+    ssn CHAR(9),
+    SecNo CHAR(5) REFERENCES Course(SecNo),	  
+    Semester VARCHAR2(10), 
+    CONSTRAINT Enrolled_ssn_fk FOREIGN KEY(ssn) REFERENCES Student, 
+    CONSTRAINT Enrolled_pk PRIMARY KEY(ssn,SecNo)
+); 
+
+
+INSERT INTO Enrolled
+(ssn,SecNo,Semester) VALUES ('437890245','12376','FALL2003');
+
+INSERT INTO Enrolled
+(ssn,SecNo,Semester) VALUES ('437890245','34566','FALL2003');
+
+INSERT INTO Enrolled
+(ssn,SecNo,Semester) VALUES ('437890245','04325','FALL2003');
+
+INSERT INTO Enrolled
+(ssn,SecNo,Semester) VALUES ('437890245','67346','FALL2003');
+
+INSERT INTO Enrolled
+(ssn,SecNo,Semester) VALUES ('437890249','04325','FALL2003');
+
+INSERT INTO Enrolled
+(ssn,SecNo,Semester) VALUES ('437890246','34566','FALL2003');
+
+INSERT INTO Enrolled
+(ssn,SecNo,Semester) VALUES ('437890247','04325','SPRING2003');
+
+INSERT INTO Enrolled
+(ssn,SecNo,Semester) VALUES ('437890248','67346','FALL2003');
+
+INSERT INTO Enrolled
+(ssn,SecNo,Semester) VALUES ('437890249','34566','SPRING2003');
+
+
+/**********************************for 1 no. question*****************************************/
+
+DECLARE
+    c1_ssn char(9);
+    c2_Last varchar(30);
+    c3_first varchar(30);
+    c4_gender CHAR;
+    
+    cursor demo_cursor is select ssn, Last, First, gender from Student;
+BEGIN
+    open demo_cursor;
+    
+    LOOP
+        fetch demo_cursor into c1_ssn, c2_Last, c3_first, c4_gender;
+        
+            if(c4_gender='M') then
+                dbms_output.put_line(c1_ssn||' -> '||c2_Last||' -> '||c3_first||' -> '||'Male');
+            else  dbms_output.put_line(c1_ssn||' -> '||c2_Last||' -> '||c3_first||' -> '||'Female');
+            end if;
+            
+    exit when demo_cursor%notfound;
+    end loop;
+    close demo_cursor;
+    
+END;
+
+ /***************************************for 2no. question ********************/
+
+declare
+    char1 varchar(20);
+    temp number(10);
+    
+    cursor demo_cursor is select distinct(SECNO) from Enrolled;
+    
+procedure CLASS_SUMMARY(SNo in char) is
+
+begin
+    select count(ssn) into temp from Enrolled
+        where SNo = ENROLLED.SECNO;
+    dbms_output.put_line('Section no: '||Sno||' --->  Students :'||temp);    
+end;
+    
+begin
+    open demo_cursor;
+    
+    loop
+        fetch demo_cursor into char1;
+        exit when demo_cursor%notfound;
+        CLASS_SUMMARY(char1);
+        end loop;
+end;
+
+
+/****************************for 3 no. question***************************************/
+
+drop trigger DISPLY_ABV_AVG_STDS;
+
+CREATE OR REPLACE TRIGGER DISPLY_ABV_AVG_STDS  
+AFTER INSERT OR UPDATE ON Student FOR EACH ROW   
+
+DECLARE 
+    temp_gpa number(3, 2);
+    PRAGMA AUTONOMOUS_TRANSACTION;
+
+BEGIN  
+    select avg(Student.GPA) into temp_gpa from Student;
+    
+    if(:new.GPA > temp_gpa) then
+        dbms_output.put_line('Above average: ' || :new.ssn);
+    else
+        dbms_output.put_line('Below average: ' || :new.ssn);
+    end if;
+    commit;
+END;
+
+
+BEGIN  
+    INSERT INTO Student (ssn,Last,First,DOB,gender,gpa) 
+    VALUES ('120', 'AR', 'Munna', TO_DATE('03-17-1997', 'MM-DD-YYYY'),'M',3.70);
+commit;
+END;  
+
+
+
+
+
+
+
